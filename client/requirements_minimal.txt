@@ -1,0 +1,5 @@
+# 最小化依赖 - 兼容Python 3.13
+reportlab
+qrcode[pil]
+requests
+python-dateutil

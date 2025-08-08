@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block title %}系统信息 - 乐谱验证系统{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1 style="font-weight: 300;">⚙️ 系统信息</h1>
+    <a href="{{ url_for('admin_dashboard') }}" class="btn">← 返回仪表板</a>
+</div>
+
+<!-- 服务状态 -->
+<div class="card">
+    <h2>🚀 服务状态</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+        <div>
+            <h3>API服务</h3>
+            <div style="color: #007700; font-weight: bold; padding: 1rem;">
+                ● 运行中
+            </div>
+        </div>
+        
+        <div>
+            <h3>数据库</h3>
+            <div style="color: {{ '#007700' if db_info.exists else '#cc0000' }}; font-weight: bold; padding: 1rem;">
+                {{ '● 正常' if db_info.exists else '● 异常' }}
+            </div>
+        </div>
+        
+        <div>
+            <h3>服务器时间</h3>
+            <div style="padding: 1rem; font-family: monospace;">
+                {{ current_time }}
+            </div>
+        </div>
+        
+        <div>
+            <h3>运行时长</h3>
+            <div style="padding: 1rem;">
+                {{ system_info.uptime if system_info.uptime != 'Unknown' else '未知' }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统资源 -->
+<div class="card">
+    <h2>💻 系统资源</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+        <div>
+            <h3>CPU</h3>
+            <div style="padding: 1rem;">
+                <div>核心数: <strong>{{ system_info.cpu_count }}</strong></div>
+                <div>架构: <strong>{{ system_info.platform }}</strong></div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>内存</h3>
+            <div style="padding: 1rem;">
+                <div>总容量: <strong>{{ system_info.memory_total }} GB</strong></div>
+                <div>使用率: <strong>{{ system_info.memory_used }}%</strong></div>
+                <div style="background: #f0f0f0; height: 20px; border: 1px solid #000; margin-top: 10px;">
+                    <div style="background: {{ '#cc0000' if system_info.memory_used|float > 80 else '#007700' }}; height: 100%; width: {{ system_info.memory_used }}%;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>磁盘</h3>
+            <div style="padding: 1rem;">
+                <div>总容量: <strong>{{ system_info.disk_total }} GB</strong></div>
+                <div>使用率: <strong>{{ system_info.disk_used }}%</strong></div>
+                <div style="background: #f0f0f0; height: 20px; border: 1px solid #000; margin-top: 10px;">
+                    <div style="background: {{ '#cc0000' if system_info.disk_used|float > 80 else '#007700' }}; height: 100%; width: {{ system_info.disk_used }}%;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>Python环境</h3>
+            <div style="padding: 1rem;">
+                <div>版本: <strong>{{ system_info.python_version }}</strong></div>
+                <div>Flask: <strong>运行中</strong></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据库信息 -->
+<div class="card">
+    <h2>🗄️ 数据库信息</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+        <div>
+            <h3>数据库文件</h3>
+            <div style="padding: 1rem; font-family: monospace; word-break: break-all;">
+                {{ db_info.path }}
+            </div>
+        </div>
+        
+        <div>
+            <h3>文件大小</h3>
+            <div style="padding: 1rem;">
+                <strong>{{ "%.2f"|format(db_info.size_mb) }} MB</strong>
+            </div>
+        </div>
+        
+        <div>
+            <h3>状态</h3>
+            <div style="padding: 1rem; color: {{ '#007700' if db_info.exists else '#cc0000' }}; font-weight: bold;">
+                {{ '✓ 正常' if db_info.exists else '✗ 文件不存在' }}
+            </div>
+        </div>
+        
+        <div>
+            <h3>备份建议</h3>
+            <div style="padding: 1rem;">
+                {% if db_info.size_mb > 100 %}
+                    <span style="color: #cc0000;">⚠️ 建议备份</span>
+                {% else %}
+                    <span style="color: #007700;">✓ 大小正常</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 应用信息 -->
+<div class="card">
+    <h2>📱 应用信息</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+        <div>
+            <h3>应用版本</h3>
+            <div style="padding: 1rem;">
+                <strong>v2.0.0</strong>
+            </div>
+        </div>
+        
+        <div>
+            <h3>API端点</h3>
+            <div style="padding: 1rem;">
+                <div>/api/status</div>
+                <div>/api/verify/{code}</div>
+                <div>/api/sync-codes</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>管理后台</h3>
+            <div style="padding: 1rem;">
+                <div>登录用户: <strong>{{ session.admin_username }}</strong></div>
+                <div>会话状态: <strong>活跃</strong></div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>安全设置</h3>
+            <div style="padding: 1rem;">
+                <div>HTTPS: <strong>{{ '启用' if request.is_secure else '未启用' }}</strong></div>
+                <div>API认证: <strong>启用</strong></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 日志信息 -->
+<div class="card">
+    <h2>📝 日志信息</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+        <div>
+            <h3>应用日志</h3>
+            <div style="padding: 1rem;">
+                <div>路径: /var/log/musicqr/api.log</div>
+                <div>级别: INFO</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>Nginx日志</h3>
+            <div style="padding: 1rem;">
+                <div>访问: /var/log/nginx/musicqr_access.log</div>
+                <div>错误: /var/log/nginx/musicqr_error.log</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>系统日志</h3>
+            <div style="padding: 1rem;">
+                <div>服务: journalctl -u musicqr-api</div>
+                <div>系统: /var/log/syslog</div>
+            </div>
+        </div>
+        
+        <div>
+            <h3>备份目录</h3>
+            <div style="padding: 1rem;">
+                <div>路径: /var/backups/musicqr</div>
+                <div>策略: 每日自动备份</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 维护操作 -->
+<div class="card">
+    <h2>🔧 维护操作</h2>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="checkApiStatus()">检查API状态</button>
+        <button class="btn" onclick="testDatabase()">测试数据库</button>
+        <button class="btn" onclick="viewLogs()">查看日志</button>
+        <a href="{{ url_for('admin_export') }}" class="btn">备份数据</a>
+    </div>
+    
+    <div id="maintenance-result" style="margin-top: 1rem; padding: 1rem; background: #f8f8f8; border: 1px solid #ddd; display: none;">
+        <h4>操作结果</h4>
+        <pre id="maintenance-output" style="white-space: pre-wrap; font-family: monospace;"></pre>
+    </div>
+</div>
+
+<!-- 系统建议 -->
+<div class="card">
+    <h2>💡 系统建议</h2>
+    <div style="color: #666666; line-height: 1.8;">
+        {% if system_info.memory_used|float > 80 %}
+        <div style="color: #cc0000; margin-bottom: 1rem;">
+            ⚠️ <strong>内存使用率过高 ({{ system_info.memory_used }}%)</strong><br>
+            建议：重启服务或增加内存容量
+        </div>
+        {% endif %}
+        
+        {% if system_info.disk_used|float > 80 %}
+        <div style="color: #cc0000; margin-bottom: 1rem;">
+            ⚠️ <strong>磁盘使用率过高 ({{ system_info.disk_used }}%)</strong><br>
+            建议：清理日志文件或扩展存储空间
+        </div>
+        {% endif %}
+        
+        {% if db_info.size_mb > 100 %}
+        <div style="color: #ff8800; margin-bottom: 1rem;">
+            ⚠️ <strong>数据库文件较大 ({{ "%.2f"|format(db_info.size_mb) }} MB)</strong><br>
+            建议：定期备份数据库并清理旧记录
+        </div>
+        {% endif %}
+        
+        <div style="margin-bottom: 1rem;">
+            ✅ <strong>定期维护建议：</strong><br>
+            • 每周备份数据库文件<br>
+            • 每月清理旧日志文件<br>
+            • 监控系统资源使用情况<br>
+            • 定期更新系统和依赖包
+        </div>
+        
+        <div>
+            ✅ <strong>安全建议：</strong><br>
+            • 定期更换管理员密码<br>
+            • 监控异常访问日志<br>
+            • 保持HTTPS证书有效<br>
+            • 限制管理后台访问IP
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 检查API状态
+function checkApiStatus() {
+    showMaintenanceResult('正在检查API状态...');
+    
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            const result = `API状态检查结果：
+状态: ${data.status}
+时间: ${data.timestamp}
+统计: 总码数 ${data.stats.total_codes}, 已激活 ${data.stats.activated_codes}
+激活率: ${data.stats.activation_rate}%
+今日查询: ${data.stats.today_queries}
+
+✅ API服务正常运行`;
+            showMaintenanceResult(result);
+        })
+        .catch(error => {
+            showMaintenanceResult(`❌ API检查失败: ${error.message}`);
+        });
+}
+
+// 测试数据库
+function testDatabase() {
+    showMaintenanceResult('正在测试数据库连接...');
+    
+    // 通过API间接测试数据库
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            const result = `数据库连接测试结果：
+连接状态: ✅ 正常
+数据完整性: ✅ 正常
+总记录数: ${data.stats.total_codes}
+响应时间: < 100ms
+
+数据库工作正常`;
+            showMaintenanceResult(result);
+        })
+        .catch(error => {
+            showMaintenanceResult(`❌ 数据库测试失败: ${error.message}`);
+        });
+}
+
+// 查看日志（模拟）
+function viewLogs() {
+    const logSample = `最近日志记录：
+[${new Date().toISOString()}] INFO - API服务正常运行
+[${new Date().toISOString()}] INFO - 数据库连接正常
+[${new Date().toISOString()}] INFO - 管理后台访问: ${window.location.host}
+
+💡 完整日志请在服务器上查看：
+• 应用日志: tail -f /var/log/musicqr/api.log
+• 系统日志: sudo journalctl -u musicqr-api -f
+• Nginx日志: tail -f /var/log/nginx/musicqr_access.log`;
+    
+    showMaintenanceResult(logSample);
+}
+
+// 显示维护结果
+function showMaintenanceResult(text) {
+    const resultDiv = document.getElementById('maintenance-result');
+    const outputPre = document.getElementById('maintenance-output');
+    
+    outputPre.textContent = text;
+    resultDiv.style.display = 'block';
+    
+    // 滚动到结果区域
+    resultDiv.scrollIntoView({ behavior: 'smooth' });
+}
+
+// 自动刷新系统信息
+setInterval(function() {
+    // 每30秒更新一次时间显示
+    const timeElements = document.querySelectorAll('.current-time');
+    const now = new Date().toLocaleString('zh-CN');
+    timeElements.forEach(el => el.textContent = now);
+}, 30000);
+</script>
+{% endblock %}

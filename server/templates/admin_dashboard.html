@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}管理仪表板 - 乐谱验证系统{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem; font-weight: 300;">📊 系统仪表板</h1>
+
+<!-- 统计卡片 -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.total_codes or 0 }}</span>
+        <div class="stat-label">总授权码数</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.activated_codes or 0 }}</span>
+        <div class="stat-label">已激活</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ "%.1f"|format(stats.activation_rate or 0) }}%</span>
+        <div class="stat-label">激活率</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.today_queries or 0 }}</span>
+        <div class="stat-label">今日查询</div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="card">
+    <h2>🚀 快速操作</h2>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <a href="{{ url_for('admin_codes') }}" class="btn btn-primary">管理授权码</a>
+        <a href="{{ url_for('admin_add_code') }}" class="btn">添加授权码</a>
+        <a href="{{ url_for('admin_export') }}" class="btn">导出数据</a>
+        <a href="{{ url_for('admin_system_info') }}" class="btn">系统信息</a>
+    </div>
+</div>
+
+<!-- 最近激活 -->
+{% if recent_activations %}
+<div class="card">
+    <h2>📈 最近激活</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>授权码</th>
+                    <th>激活时间</th>
+                    <th>查询次数</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activation in recent_activations %}
+                <tr>
+                    <td><code>{{ activation.code }}</code></td>
+                    <td>{{ activation.activation_date[:19] if activation.activation_date else '-' }}</td>
+                    <td>{{ activation.query_count or 0 }}</td>
+                    <td>
+                        <a href="{{ url_for('admin_code_detail', code=activation.code) }}" 
+                           class="btn btn-small">详情</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- 系统状态 -->
+<div class="card">
+    <h2>⚙️ 系统状态</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+        <div>
+            <strong>服务状态:</strong> 
+            <span style="color: #007700;">● 运行中</span>
+        </div>
+        <div>
+            <strong>数据库大小:</strong> 
+            {{ "%.2f"|format(db_size_mb or 0) }} MB
+        </div>
+        <div>
+            <strong>服务器时间:</strong> 
+            {{ current_time }}
+        </div>
+        <div>
+            <strong>API版本:</strong> 
+            v2.0.0
+        </div>
+    </div>
+</div>
+
+<!-- 使用趋势图 -->
+{% if daily_stats %}
+<div class="card">
+    <h2>📊 7天激活趋势</h2>
+    <div style="height: 200px; display: flex; align-items: end; gap: 10px; padding: 20px 0;">
+        {% for day in daily_stats %}
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+            <div style="background: #000000; width: 100%; height: {{ (day.count / max_daily_count * 150) if max_daily_count > 0 else 0 }}px; min-height: 2px;"></div>
+            <div style="margin-top: 10px; font-size: 0.8em; text-align: center;">
+                <div>{{ day.count }}</div>
+                <div style="color: #666;">{{ day.date[-5:] }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- 操作日志 -->
+<div class="card">
+    <h2>📝 操作提示</h2>
+    <div style="color: #666666; line-height: 1.8;">
+        <p>• 点击"管理授权码"查看和管理所有授权码</p>
+        <p>• 使用"添加授权码"手动添加新的验证码</p>
+        <p>• "导出数据"可以下载所有授权码的CSV文件</p>
+        <p>• 系统会自动记录所有验证和激活操作</p>
+        <p>• 建议定期备份数据库文件</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 自动刷新统计数据
+setInterval(function() {
+    // 每30秒刷新一次页面数据（可选）
+    // location.reload();
+}, 30000);
+
+// 显示当前时间
+function updateTime() {
+    const now = new Date();
+    const timeStr = now.toLocaleString('zh-CN');
+    // 可以更新页面上的时间显示
+}
+
+setInterval(updateTime, 1000);
+</script>
+{% endblock %}

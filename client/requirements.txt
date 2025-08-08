@@ -1,0 +1,35 @@
+# PDF生成
+reportlab>=4.0.0
+
+# 二维码生成
+qrcode[pil]>=7.0.0
+Pillow>=10.0.0
+
+# HTTP请求
+requests==2.31.0
+
+# 加密和安全
+cryptography==41.0.7
+
+# 日期时间处理
+python-dateutil==2.8.2
+
+# 环境变量管理
+python-dotenv==1.0.0
+
+# 进度条显示
+tqdm==4.66.1
+
+# 颜色输出
+colorama==0.4.6
+
+# JSON处理
+ujson==5.8.0
+
+# 系统信息
+psutil==5.9.6
+
+# 开发工具
+pytest==7.4.3
+black==23.9.1
+flake8==6.1.0

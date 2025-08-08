@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}添加授权码 - 乐谱验证系统{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1 style="font-weight: 300;">➕ 添加授权码</h1>
+    <a href="{{ url_for('admin_codes') }}" class="btn">← 返回列表</a>
+</div>
+
+<!-- 单个添加 -->
+<div class="card">
+    <h2>单个添加</h2>
+    <form method="POST" action="{{ url_for('admin_add_code') }}">
+        <input type="hidden" name="action" value="single">
+        
+        <div class="form-group">
+            <label for="code">授权码 (12位字符)</label>
+            <input type="text" id="code" name="code" maxlength="12" 
+                   pattern="[A-Z0-9]{12}" 
+                   style="text-transform: uppercase; letter-spacing: 2px; font-family: monospace;"
+                   placeholder="留空自动生成" 
+                   value="{{ request.form.code if request.form.action == 'single' }}">
+            <small style="color: #666;">只能包含大写字母和数字，留空将自动生成</small>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">添加授权码</button>
+            <button type="button" class="btn" onclick="generateCode()">生成随机码</button>
+        </div>
+    </form>
+</div>
+
+<!-- 批量添加 -->
+<div class="card">
+    <h2>批量添加</h2>
+    <form method="POST" action="{{ url_for('admin_add_code') }}">
+        <input type="hidden" name="action" value="batch">
+        
+        <div class="form-group">
+            <label for="count">生成数量</label>
+            <input type="number" id="count" name="count" min="1" max="1000" 
+                   value="{{ request.form.count if request.form.action == 'batch' else '10' }}" required>
+            <small style="color: #666;">一次最多生成1000个授权码</small>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">批量生成</button>
+        </div>
+    </form>
+</div>
+
+<!-- 导入授权码 -->
+<div class="card">
+    <h2>导入授权码</h2>
+    <form method="POST" action="{{ url_for('admin_add_code') }}" enctype="multipart/form-data">
+        <input type="hidden" name="action" value="import">
+        
+        <div class="form-group">
+            <label for="import_text">文本导入</label>
+            <textarea id="import_text" name="import_text" rows="6" 
+                      placeholder="每行一个授权码，支持以下格式：&#10;ABCD12345678&#10;EFGH87654321&#10;或CSV格式：授权码,创建时间"
+                      style="font-family: monospace;">{{ request.form.import_text if request.form.action == 'import' }}</textarea>
+            <small style="color: #666;">每行一个授权码，或CSV格式（授权码,创建时间）</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="import_file">文件导入</label>
+            <input type="file" id="import_file" name="import_file" accept=".txt,.csv">
+            <small style="color: #666;">支持TXT或CSV文件</small>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="skip_duplicates" checked> 跳过重复的授权码
+            </label>
+        </div>
+        
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">导入授权码</button>
+        </div>
+    </form>
+</div>
+
+<!-- 最近添加的授权码 -->
+{% if recent_codes %}
+<div class="card">
+    <h2>📝 最近添加</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>授权码</th>
+                    <th>创建时间</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for code in recent_codes %}
+                <tr>
+                    <td><code>{{ code.code }}</code></td>
+                    <td>{{ code.created_date[:19] if code.created_date else '-' }}</td>
+                    <td>
+                        {% if code.activated %}
+                            <span style="color: #007700;">✓ 已激活</span>
+                        {% else %}
+                            <span style="color: #666666;">○ 未激活</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('admin_code_detail', code=code.code) }}" 
+                           class="btn btn-small">详情</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- 使用说明 -->
+<div class="card">
+    <h2>📖 使用说明</h2>
+    <div style="color: #666666; line-height: 1.8;">
+        <h3>授权码规则：</h3>
+        <ul style="margin-left: 2rem;">
+            <li>长度必须为12位</li>
+            <li>只能包含大写字母（A-Z）和数字（0-9）</li>
+            <li>排除容易混淆的字符：0、O、I、1</li>
+            <li>每个授权码必须唯一</li>
+        </ul>
+        
+        <h3>导入格式：</h3>
+        <ul style="margin-left: 2rem;">
+            <li><strong>纯文本：</strong>每行一个授权码</li>
+            <li><strong>CSV格式：</strong>授权码,创建时间</li>
+            <li><strong>示例：</strong>ABCD12345678,2024-01-01T12:00:00</li>
+        </ul>
+        
+        <h3>注意事项：</h3>
+        <ul style="margin-left: 2rem;">
+            <li>重复的授权码会被自动跳过（如果勾选跳过选项）</li>
+            <li>批量生成时会自动确保唯一性</li>
+            <li>建议定期备份授权码数据</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 生成随机授权码
+function generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 排除容易混淆的字符
+    let code = '';
+    for (let i = 0; i < 12; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('code').value = code;
+}
+
+// 自动转换为大写
+document.getElementById('code').addEventListener('input', function(e) {
+    let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    // 排除容易混淆的字符
+    value = value.replace(/[01IO]/g, '');
+    if (value.length > 12) {
+        value = value.substring(0, 12);
+    }
+    e.target.value = value;
+});
+
+// 导入文本自动转换
+document.getElementById('import_text').addEventListener('input', function(e) {
+    let value = e.target.value.toUpperCase();
+    e.target.value = value;
+});
+
+// 文件导入处理
+document.getElementById('import_file').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('import_text').value = e.target.result;
+        };
+        reader.readAsText(file);
+    }
+});
+
+// 表单验证
+document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        const action = this.querySelector('input[name="action"]').value;
+        
+        if (action === 'single') {
+            const code = this.querySelector('input[name="code"]').value.trim();
+            if (code && code.length !== 12) {
+                e.preventDefault();
+                alert('授权码长度必须为12位');
+                return;
+            }
+        }
+        
+        if (action === 'batch') {
+            const count = parseInt(this.querySelector('input[name="count"]').value);
+            if (count > 1000) {
+                e.preventDefault();
+                alert('一次最多生成1000个授权码');
+                return;
+            }
+        }
+        
+        if (action === 'import') {
+            const text = this.querySelector('textarea[name="import_text"]').value.trim();
+            const file = this.querySelector('input[name="import_file"]').files[0];
+            if (!text && !file) {
+                e.preventDefault();
+                alert('请输入要导入的授权码或选择文件');
+                return;
+            }
+        }
+    });
+});
+
+// 自动聚焦
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('code').focus();
+});
+</script>
+{% endblock %}

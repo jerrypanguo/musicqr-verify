@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}授权码详情 - {{ code_info.code }} - 乐谱验证系统{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1 style="font-weight: 300;">🔍 授权码详情</h1>
+    <div>
+        <a href="{{ url_for('admin_codes') }}" class="btn">← 返回列表</a>
+        <a href="{{ url_for('admin_delete_code', code=code_info.code) }}" 
+           class="btn btn-danger"
+           onclick="return confirm('确认删除此授权码？')">删除</a>
+    </div>
+</div>
+
+<!-- 基本信息 -->
+<div class="card">
+    <h2>📋 基本信息</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+        <div>
+            <h3>授权码</h3>
+            <div style="font-family: monospace; font-size: 1.5em; font-weight: bold; color: #000; background: #f8f8f8; padding: 1rem; border: 2px solid #000; text-align: center; letter-spacing: 2px;">
+                {{ code_info.code }}
+            </div>
+        </div>
+        
+        <div>
+            <h3>状态</h3>
+            <div style="font-size: 1.2em; padding: 1rem;">
+                {% if code_info.activated %}
+                    <span style="color: #007700; font-weight: bold;">✓ 已激活</span>
+                {% else %}
+                    <span style="color: #666666; font-weight: bold;">○ 未激活</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div>
+            <h3>创建时间</h3>
+            <div style="padding: 1rem;">
+                {{ code_info.created_date[:19] if code_info.created_date else '-' }}
+            </div>
+        </div>
+        
+        <div>
+            <h3>查询次数</h3>
+            <div style="font-size: 1.5em; font-weight: bold; padding: 1rem;">
+                {{ code_info.query_count or 0 }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 激活信息 -->
+{% if code_info.activated %}
+<div class="card">
+    <h2>🎯 激活信息</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+        <div>
+            <h3>激活时间</h3>
+            <div style="padding: 1rem;">
+                {{ code_info.activation_date[:19] if code_info.activation_date else '-' }}
+            </div>
+        </div>
+        
+        <div>
+            <h3>激活IP</h3>
+            <div style="padding: 1rem; font-family: monospace;">
+                {{ code_info.activation_ip or '-' }}
+            </div>
+        </div>
+        
+        <div>
+            <h3>最后查询</h3>
+            <div style="padding: 1rem;">
+                {{ code_info.last_query_date[:19] if code_info.last_query_date else '-' }}
+            </div>
+        </div>
+        
+        <div>
+            <h3>设备信息</h3>
+            <div style="padding: 1rem; font-size: 0.9em; color: #666;">
+                {{ code_info.activation_user_agent[:50] + '...' if code_info.activation_user_agent and code_info.activation_user_agent|length > 50 else (code_info.activation_user_agent or '-') }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- 二维码预览 -->
+<div class="card">
+    <h2>📱 二维码预览</h2>
+    <div style="text-align: center; padding: 2rem;">
+        <div id="qrcode" style="display: inline-block; padding: 2rem; background: #ffffff; border: 2px solid #000;"></div>
+        <div style="margin-top: 1rem; color: #666;">
+            <p>验证URL: <code>{{ request.url_root }}?code={{ code_info.code }}</code></p>
+            <p>用户扫描此二维码即可验证乐谱真伪</p>
+        </div>
+    </div>
+</div>
+
+<!-- 操作记录 -->
+<div class="card">
+    <h2>📝 操作记录</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>时间</th>
+                    <th>操作</th>
+                    <th>结果</th>
+                    <th>IP地址</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if code_info.activated %}
+                <tr>
+                    <td>{{ code_info.activation_date[:19] if code_info.activation_date else '-' }}</td>
+                    <td>首次激活</td>
+                    <td><span style="color: #007700;">成功</span></td>
+                    <td>{{ code_info.activation_ip or '-' }}</td>
+                </tr>
+                {% endif %}
+                
+                {% if code_info.last_query_date and code_info.last_query_date != code_info.activation_date %}
+                <tr>
+                    <td>{{ code_info.last_query_date[:19] if code_info.last_query_date else '-' }}</td>
+                    <td>查询验证</td>
+                    <td><span style="color: #007700;">成功</span></td>
+                    <td>-</td>
+                </tr>
+                {% endif %}
+                
+                <tr>
+                    <td>{{ code_info.created_date[:19] if code_info.created_date else '-' }}</td>
+                    <td>创建授权码</td>
+                    <td><span style="color: #007700;">成功</span></td>
+                    <td>系统</td>
+                </tr>
+                
+                {% if not code_info.activated and not code_info.last_query_date %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #666; padding: 2rem;">
+                        此授权码尚未被使用
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 统计信息 -->
+<div class="card">
+    <h2>📊 统计信息</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div class="stat-card">
+            <span class="stat-number">{{ code_info.query_count or 0 }}</span>
+            <div class="stat-label">总查询次数</div>
+        </div>
+        
+        <div class="stat-card">
+            <span class="stat-number">
+                {% if code_info.created_date and code_info.activation_date %}
+                    {{ ((code_info.activation_date | strptime('%Y-%m-%dT%H:%M:%S')) - (code_info.created_date | strptime('%Y-%m-%dT%H:%M:%S'))).days }}
+                {% else %}
+                    -
+                {% endif %}
+            </span>
+            <div class="stat-label">激活间隔(天)</div>
+        </div>
+        
+        <div class="stat-card">
+            <span class="stat-number">
+                {% if code_info.created_date %}
+                    {{ ((now | strptime('%Y-%m-%d %H:%M:%S')) - (code_info.created_date | strptime('%Y-%m-%dT%H:%M:%S'))).days }}
+                {% else %}
+                    -
+                {% endif %}
+            </span>
+            <div class="stat-label">存在天数</div>
+        </div>
+        
+        <div class="stat-card">
+            <span class="stat-number">
+                {% if code_info.activated %}
+                    ✓
+                {% else %}
+                    ○
+                {% endif %}
+            </span>
+            <div class="stat-label">激活状态</div>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="card">
+    <h2>⚡ 快速操作</h2>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button class="btn btn-primary" onclick="testVerification()">测试验证</button>
+        <button class="btn" onclick="copyCode()">复制授权码</button>
+        <button class="btn" onclick="copyUrl()">复制验证URL</button>
+        <a href="{{ url_for('admin_export', codes=code_info.code) }}" class="btn">导出数据</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-card {
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#qrcode canvas {
+    border: 1px solid #ddd;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- 引入QR码生成库 -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+<script>
+// 生成二维码
+document.addEventListener('DOMContentLoaded', function() {
+    const qrContainer = document.getElementById('qrcode');
+    const verifyUrl = '{{ request.url_root }}?code={{ code_info.code }}';
+    
+    QRCode.toCanvas(verifyUrl, {
+        width: 200,
+        height: 200,
+        color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+        }
+    }, function(error, canvas) {
+        if (error) {
+            qrContainer.innerHTML = '<p style="color: #cc0000;">二维码生成失败</p>';
+        } else {
+            qrContainer.appendChild(canvas);
+        }
+    });
+});
+
+// 测试验证
+function testVerification() {
+    const code = '{{ code_info.code }}';
+    fetch(`/api/verify/${code}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.valid) {
+                alert(`验证成功！\n状态: ${data.activated ? '已激活' : '未激活'}\n消息: ${data.message}`);
+            } else {
+                alert(`验证失败: ${data.message}`);
+            }
+        })
+        .catch(error => {
+            alert('测试失败: ' + error.message);
+        });
+}
+
+// 复制授权码
+function copyCode() {
+    const code = '{{ code_info.code }}';
+    navigator.clipboard.writeText(code).then(() => {
+        alert('授权码已复制到剪贴板');
+    }).catch(() => {
+        // 降级方案
+        const textArea = document.createElement('textarea');
+        textArea.value = code;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('授权码已复制到剪贴板');
+    });
+}
+
+// 复制验证URL
+function copyUrl() {
+    const url = '{{ request.url_root }}?code={{ code_info.code }}';
+    navigator.clipboard.writeText(url).then(() => {
+        alert('验证URL已复制到剪贴板');
+    }).catch(() => {
+        // 降级方案
+        const textArea = document.createElement('textarea');
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        alert('验证URL已复制到剪贴板');
+    });
+}
+
+// 添加日期过滤器支持
+{% set now = moment().format('YYYY-MM-DD HH:mm:ss') %}
+</script>
+{% endblock %}

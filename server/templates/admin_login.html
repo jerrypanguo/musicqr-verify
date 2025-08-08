@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}管理员登录 - 乐谱验证系统{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 4rem auto;">
+    <div class="card">
+        <h2 style="text-align: center; margin-bottom: 2rem;">🎵 管理员登录</h2>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" required 
+                       value="{{ request.form.username }}" autocomplete="username">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+            
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">登录</button>
+            </div>
+        </form>
+        
+        <div style="text-align: center; margin-top: 2rem; color: #666666; font-size: 0.9em;">
+            <p>乐谱验证系统管理后台</p>
+            <p>请使用管理员账号登录</p>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 登录页面特殊样式 */
+body {
+    background: linear-gradient(135deg, #f8f8f8 0%, #ffffff 100%);
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-group input:focus {
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 自动聚焦到用户名输入框
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('username').focus();
+});
+
+// 回车键提交表单
+document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.querySelector('form').submit();
+    }
+});
+</script>
+{% endblock %}

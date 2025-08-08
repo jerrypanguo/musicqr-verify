@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}授权码管理 - 乐谱验证系统{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1 style="font-weight: 300;">🔑 授权码管理</h1>
+    <div>
+        <a href="{{ url_for('admin_add_code') }}" class="btn btn-primary">+ 添加授权码</a>
+        <a href="{{ url_for('admin_export') }}" class="btn">导出数据</a>
+    </div>
+</div>
+
+<!-- 搜索和筛选 -->
+<div class="card">
+    <form method="GET" class="search-bar">
+        <div class="form-group">
+            <label for="search">搜索授权码</label>
+            <input type="text" id="search" name="search" placeholder="输入授权码..." 
+                   value="{{ request.args.get('search', '') }}">
+        </div>
+        <div class="form-group">
+            <label for="status">状态筛选</label>
+            <select id="status" name="status">
+                <option value="">全部</option>
+                <option value="activated" {{ 'selected' if request.args.get('status') == 'activated' }}>已激活</option>
+                <option value="not_activated" {{ 'selected' if request.args.get('status') == 'not_activated' }}>未激活</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="sort">排序方式</label>
+            <select id="sort" name="sort">
+                <option value="created_desc" {{ 'selected' if request.args.get('sort') == 'created_desc' }}>创建时间↓</option>
+                <option value="created_asc" {{ 'selected' if request.args.get('sort') == 'created_asc' }}>创建时间↑</option>
+                <option value="activation_desc" {{ 'selected' if request.args.get('sort') == 'activation_desc' }}>激活时间↓</option>
+                <option value="query_desc" {{ 'selected' if request.args.get('sort') == 'query_desc' }}>查询次数↓</option>
+            </select>
+        </div>
+        <div>
+            <button type="submit" class="btn btn-primary">搜索</button>
+            <a href="{{ url_for('admin_codes') }}" class="btn">重置</a>
+        </div>
+    </form>
+</div>
+
+<!-- 批量操作 -->
+<div class="card">
+    <form id="bulk-form" method="POST" action="{{ url_for('admin_bulk_action') }}">
+        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+            <label>
+                <input type="checkbox" id="select-all"> 全选
+            </label>
+            <select name="action" required>
+                <option value="">选择操作...</option>
+                <option value="delete">删除选中</option>
+                <option value="export">导出选中</option>
+            </select>
+            <button type="submit" class="btn btn-danger" onclick="return confirm('确认执行批量操作？')">执行</button>
+        </div>
+
+        <!-- 授权码列表 -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="40"><input type="checkbox" id="select-all-header"></th>
+                        <th>授权码</th>
+                        <th>创建时间</th>
+                        <th>状态</th>
+                        <th>激活时间</th>
+                        <th>查询次数</th>
+                        <th>最后查询</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for code in codes %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" name="selected_codes" value="{{ code.code }}">
+                        </td>
+                        <td>
+                            <code style="font-weight: bold;">{{ code.code }}</code>
+                        </td>
+                        <td>{{ code.created_date[:19] if code.created_date else '-' }}</td>
+                        <td>
+                            {% if code.activated %}
+                                <span style="color: #007700;">✓ 已激活</span>
+                            {% else %}
+                                <span style="color: #666666;">○ 未激活</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ code.activation_date[:19] if code.activation_date else '-' }}</td>
+                        <td>{{ code.query_count or 0 }}</td>
+                        <td>{{ code.last_query_date[:19] if code.last_query_date else '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('admin_code_detail', code=code.code) }}" 
+                               class="btn btn-small">详情</a>
+                            <a href="{{ url_for('admin_delete_code', code=code.code) }}" 
+                               class="btn btn-small btn-danger"
+                               onclick="return confirm('确认删除授权码 {{ code.code }}？')">删除</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #666666; padding: 2rem;">
+                            {% if request.args.get('search') or request.args.get('status') %}
+                                没有找到符合条件的授权码
+                            {% else %}
+                                暂无授权码数据
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+
+<!-- 分页 -->
+{% if pagination %}
+<div class="pagination">
+    {% if pagination.has_prev %}
+        <a href="{{ url_for('admin_codes', page=pagination.prev_num, **request.args) }}">« 上一页</a>
+    {% endif %}
+    
+    {% for page_num in pagination.iter_pages() %}
+        {% if page_num %}
+            {% if page_num != pagination.page %}
+                <a href="{{ url_for('admin_codes', page=page_num, **request.args) }}">{{ page_num }}</a>
+            {% else %}
+                <span class="current">{{ page_num }}</span>
+            {% endif %}
+        {% else %}
+            <span>…</span>
+        {% endif %}
+    {% endfor %}
+    
+    {% if pagination.has_next %}
+        <a href="{{ url_for('admin_codes', page=pagination.next_num, **request.args) }}">下一页 »</a>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- 统计信息 -->
+<div class="card">
+    <h3>📊 当前筛选统计</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+        <div>总数: <strong>{{ total_count }}</strong></div>
+        <div>已激活: <strong>{{ activated_count }}</strong></div>
+        <div>未激活: <strong>{{ total_count - activated_count }}</strong></div>
+        <div>激活率: <strong>{{ "%.1f"|format((activated_count / total_count * 100) if total_count > 0 else 0) }}%</strong></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 全选功能
+document.getElementById('select-all').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('input[name="selected_codes"]');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+document.getElementById('select-all-header').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('input[name="selected_codes"]');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+
+// 批量操作确认
+document.getElementById('bulk-form').addEventListener('submit', function(e) {
+    const selected = document.querySelectorAll('input[name="selected_codes"]:checked');
+    const action = document.querySelector('select[name="action"]').value;
+    
+    if (selected.length === 0) {
+        e.preventDefault();
+        alert('请先选择要操作的授权码');
+        return;
+    }
+    
+    if (!action) {
+        e.preventDefault();
+        alert('请选择要执行的操作');
+        return;
+    }
+    
+    const actionText = {
+        'delete': '删除',
+        'export': '导出'
+    };
+    
+    if (!confirm(`确认${actionText[action]} ${selected.length} 个授权码？`)) {
+        e.preventDefault();
+    }
+});
+
+// 搜索框回车提交
+document.getElementById('search').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        this.form.submit();
+    }
+});
+
+// 自动保存搜索状态
+const searchForm = document.querySelector('.search-bar');
+searchForm.addEventListener('change', function() {
+    // 可以实现自动搜索功能
+    // this.submit();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,71 @@
+# 乐谱验证系统 systemd 服务配置
+# 文件位置: /etc/systemd/system/musicqr-api.service
+
+[Unit]
+Description=Music QR Code Verification API Service
+Documentation=https://github.com/your-repo/musicqr-vps
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=musicqr
+Group=musicqr
+WorkingDirectory=/var/www/musicqr
+Environment=PATH=/var/www/musicqr/venv/bin
+EnvironmentFile=/var/www/musicqr/.env
+
+# 启动命令
+ExecStart=/var/www/musicqr/venv/bin/gunicorn \
+    --bind 127.0.0.1:5000 \
+    --workers 2 \
+    --worker-class sync \
+    --worker-connections 1000 \
+    --max-requests 1000 \
+    --max-requests-jitter 100 \
+    --timeout 30 \
+    --keep-alive 2 \
+    --preload \
+    --access-logfile /var/log/musicqr/gunicorn_access.log \
+    --error-logfile /var/log/musicqr/gunicorn_error.log \
+    --log-level info \
+    --pid /var/run/musicqr/gunicorn.pid \
+    app:app
+
+# 启动前准备
+ExecStartPre=/bin/mkdir -p /var/run/musicqr
+ExecStartPre=/bin/chown musicqr:musicqr /var/run/musicqr
+
+# 停止命令
+ExecStop=/bin/kill -TERM $MAINPID
+ExecReload=/bin/kill -HUP $MAINPID
+
+# 重启策略
+Restart=always
+RestartSec=3
+StartLimitInterval=60s
+StartLimitBurst=3
+
+# 进程管理
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/musicqr /var/log/musicqr /var/backups/musicqr /var/run/musicqr
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 标准输出和错误输出
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=musicqr-api
+
+[Install]
+WantedBy=multi-user.target
